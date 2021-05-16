@@ -1,0 +1,20 @@
+
+@article{lehmann_everything_2020,
+	title = {Everything {Old} is {New} {Again}: {Binary} {Security} of {WebAssembly}},
+	abstract = {WebAssembly is an increasingly popular compilation target designed to run code in browsers and on other platforms safely and securely, by strictly separating code and data, enforcing types, and limiting indirect control ﬂow. Still, vulnerabilities in memory-unsafe source languages can translate to vulnerabilities in WebAssembly binaries. In this paper, we analyze to what extent vulnerabilities are exploitable in WebAssembly binaries, and how this compares to native code. We ﬁnd that many classic vulnerabilities which, due to common mitigations, are no longer exploitable in native binaries, are completely exposed in WebAssembly. Moreover, WebAssembly enables unique attacks, such as overwriting supposedly constant data or manipulating the heap using a stack overﬂow. We present a set of attack primitives that enable an attacker (i) to write arbitrary memory, (ii) to overwrite sensitive data, and (iii) to trigger unexpected behavior by diverting control ﬂow or manipulating the host environment. We provide a set of vulnerable proof-of-concept applications along with complete end-to-end exploits, which cover three WebAssembly platforms. An empirical risk assessment on real-world binaries and SPEC CPU programs compiled to WebAssembly shows that our attack primitives are likely to be feasible in practice. Overall, our ﬁndings show a perhaps surprising lack of binary security in WebAssembly. We discuss potential protection mechanisms to mitigate the resulting risks.},
+	language = {en},
+	journal = {Proceedings of the  29th USENIX Security Symposium},
+	author = {Lehmann, Daniel and Kinder, Johannes and Pradel, Michael},
+	month = aug,
+	year = {2020},
+	pages = {217--234},
+	file = {Lehmann et al. - Everything Old is New Again Binary Security of We.pdf:C\:\\Users\\holge\\Zotero\\storage\\UX5K75Z6\\Lehmann et al. - Everything Old is New Again Binary Security of We.pdf:application/pdf},
+}
+
+@online{webAssembly_spec_2021,
+  author = {Andreas Rossberg},
+  title = {WebAssembly Specification},
+  year = 2021,
+  url = {https://webassembly.github.io/spec/core/},
+  urldate = {2021-05-16}
+}
