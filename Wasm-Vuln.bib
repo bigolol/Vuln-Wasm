@@ -18,3 +18,61 @@
   url = {https://webassembly.github.io/spec/core/},
   urldate = {2021-05-16}
 }
+
+@online{loading_running_wasm_module,
+  author = {Nick Schonning},
+  title = {Loading and running WebAssembly code},
+  year = 2021,
+  url = {https://developer.mozilla.org/en-US/docs/WebAssembly/Loading_and_running},
+  urldate = {2021-05-16}
+}
+@online{wasm_roadmap,
+  author = {Nick Schonning},
+  title = {Loading and running WebAssembly code},
+  year = 2021,
+  url = {https://webassembly.org/roadmap/},
+  urldate = {2021-05-23}
+}
+
+
+@misc{mcfadden_security_2018,
+	title = {Security {Chasms} of {WASM}},
+	abstract = {WebAssembly is a new technology that allows web developers to run native C/C++
+on a webpage with near-native performance. This paper provides a basic introduction to WebAssembly and examines the security risks that a developer may take on by
+using it. We cover several examples exploring the theoretical security implications of
+WebAssembly. We also cover Emscripten, which is currently the most popular WebAssembly compiler toolchain. Our assessment of Emscripten includes its implementation of compiler-and-linker-level exploit mitigations as well as the internal hardening of its libc implementation, and how its augmentation of WASM introduces new
+attack vectors and methods of exploitation. We also provide examples of memory
+corruption exploits in the Wasm environment. Under certain circumstances, these
+exploits could lead to to hijacking control flow or even executing arbitrary JavaScript
+within the context of the web page. Finally, we provide a basic outline of best practices and security considerations for developers wishing to integrate WebAssembly
+into their product},
+	publisher = {NCC Group},
+	author = {McFadden, Brian and Lukasiewicz, Tyler and Dileo, Jeff and Engler, Justin},
+	month = aug,
+	year = {2018},
+	file = {Security Chasms of WASM:C\:\\Users\\holge\\Zotero\\storage\\ARGMSIL2\\us-18-Lukasiewicz-WebAssembly-A-New-World-of-Native_Exploits-On-The-Web-wp.pdf:application/pdf},
+}
+
+
+@article{hilbig_empirical_2021,
+	title = {An {Empirical} {Study} of {Real}-{World} {WebAssembly} {Binaries}},
+	abstract = {WebAssembly has emerged as a low-level language for the web and beyond. Despite its popularity in different domains, little is known about WebAssembly binaries that occur in the wild. This paper presents a comprehensive empirical study of 8,461 unique WebAssembly binaries gathered from a wide range of sources, including source code repositories, package managers, and live websites. We study the security properties, source languages, and use cases of the binaries and how they influence the security of the WebAssembly ecosystem. Our findings update some previously held assumptions about real-world WebAssembly and highlight problems that call for future research. For example, we show that vulnerabilities that propagate from insecure source languages potentially affect a wide range of binaries (e.g., two thirds of the binaries are compiled from memory unsafe languages, such as C and C++) and that 21\% of all binaries import potentially dangerous APIs from their host environment. We also show that cryptomining, which once accounted for the majority of all WebAssembly code, has been marginalized (less than 1\% of all binaries found on the web) and gives way to a diverse set of use cases. Finally, 29\% of all binaries on the web are minified, calling for techniques to decompile and reverse engineer WebAssembly. Overall, our results show that WebAssembly has left its infancy and is growing up into a language that powers a diverse ecosystem, with new challenges and opportunities for security researchers and practitioners. Besides these insights, we also share the dataset underlying our study, which is 58 times larger than the largest previously reported benchmark.},
+	language = {en},
+	author = {Hilbig, Aaron and Lehmann, Daniel and Pradel, Michael},
+	year = {2021},
+	pages = {13},
+	file = {Hilbig et al. - 2021 - An Empirical Study of Real-World WebAssembly Binar.pdf:C\:\\Users\\holge\\Zotero\\storage\\K84M3G7I\\Hilbig et al. - 2021 - An Empirical Study of Real-World WebAssembly Binar.pdf:application/pdf},
+}
+
+
+@article{musch_new_2019,
+	title = {New {Kid} on the {Web}: {A} {Study} on the {Prevalence} of {WebAssembly} in the {Wild}},
+	abstract = {WebAssembly, or Wasm for short, is a new, low-level language that allows for near-native execution performance and is supported by all major browsers as of today. In comparison to JavaScript it oﬀers faster transmission, parsing, and execution times. Up until now it has, however, been largely unclear what WebAssembly is used for in the wild. In this paper, we thus conduct the ﬁrst large-scale study on the Web. For this, we examine the prevalence of WebAssembly in the Alexa Top 1 million websites and ﬁnd that as many as 1 out of 600 sites execute Wasm code. Moreover, we perform several secondary analyses, including an evaluation of code characteristics and the assessment of a Wasm module’s ﬁeld of application. Based on this, we ﬁnd that over 50 \% of all sites using WebAssembly apply it for malicious deeds, such as mining and obfuscation.},
+	language = {en},
+	author = {Musch, Marius and Wressnegger, Christian and Johns, Martin and Rieck, Konrad},
+	year = {2019},
+	pages = {20},
+	file = {Musch et al. - New Kid on the Web A Study on the Prevalence of W.pdf:C\:\\Users\\holge\\Zotero\\storage\\GVX3FYAT\\Musch et al. - New Kid on the Web A Study on the Prevalence of W.pdf:application/pdf},
+}
+
+
