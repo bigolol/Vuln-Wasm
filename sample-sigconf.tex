@@ -197,10 +197,26 @@ WebAssembly only supports four different primitive types: 32- and 64-bit Integer
 
 \subsection{Indirect Function Calls} 
 \label{sec:indirect_calls}
-To implement indirect function calls, any function which may get called indirectly or used as a function pointer has an entry in the table section. The \textbf{call\_indirect}  operation pops an index from the stack which is used to reference an entry in the table section. This table maps the index to a function. This limits which functions can be called indirectly. Additionally, functions in WebAssembly are type checked. The \textbf{call\_indirect} operation has the function type statically encoded. Thus, an indirect call can only call functions which have the same signature. It must be remarked however that this is less limiting than it might first appear, since WebAssembly only has four native types. Thus, a function taking a pointer (or a string) has the same signature as a function taking an 32-bit Integer.
+To implement indirect function calls, any function which may get called indirectly or used as a function pointer has an entry in the table section. The \textbf{call\_indirect} operation pops an index from the stack which is used to reference an entry in the table section. This table maps the index to a function. This limits which functions can be called indirectly. Figure \ref{fig:wasm_function_addr} shows example code to make this more intuitive. This code prints 1,2,1,3 to the console when running it in the browser.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{function_addr_example}
+  \caption{This Code demonstrates how WebAssembly handles function pointers. This code prints 1,2,1,3 to the console when running it in the browser.}  
+\label{fig:wasm_function_addr}
+\end{figure}
+
+Additionally, functions in WebAssembly are type checked. The \textbf{call\_indirect} operation has the function type statically encoded. Thus, an indirect call can only call functions which have the same signature. It must be remarked however that this is less limiting than it might first appear, since WebAssembly only has four native types. Thus, a function taking a pointer (or a string) has the same signature as a function taking an 32-bit Integer. This is demonstrated by the code in . By copying the index of different functions directly into the function pointer, different functions get called indirectly. The function pointer supposedly takes a pointer to a char as argument. However, it is possible to use the index of a function taking an Integer as parameter. 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{function_type_check_example}
+  \caption{Example demonstrating how function pointer type checking works.}  
+\label{fig:wasm_function_type_checking}
+\end{figure}
 
 \subsection{Deployment, Compilers and Toolchains}
-It would be very impractical (albeit possible) to write WebAssembly from scratch. Thus, several Backends exist to generate WebAssembly bytecode from high-level languages such as C, Go or Rust. Emscripten \cite{emscripten} can not only generate the Bytecode from C/C++ but also html and Javascript to load and run the WebAssembly module. It also comes with C Headers to interact with the Browser and implements several common libraries such as SDL2 \cite{sdl2}.  
+It would be very impractical (albeit possible) to write WebAssembly from scratch. Thus, several Backends exist to generate WebAssembly bytecode from high-level languages such as C, Go or Rust. Emscripten \cite{emscripten} can not only generate the Bytecode from C/C++ but also generate Html and Javascript to load and run the WebAssembly module. It also comes with C Headers to interact with the Browser and implements several common libraries such as SDL2 \cite{sdl2}.  
 
 \section{Binary Vulnerabilities of WebAssembly programs}
 \label{sec:binary_vulns}
@@ -225,14 +241,43 @@ In this section we will discuss the security vulnerabilities of WebAssembly as p
 
 \cite{lehmann_everything_2020} similary discuss common mitigations such as ASLR and page protection flags which are not present in WebAssembly. In particular, since there are no guard pages between the different sections of the linear memory , an overflow in any section can corrupt data in any other section. And since there is no concept of read-only memory, even data which is marked as constant in the source code can be overwritten during execution.  
 
-\section{Attacking Vulnerabilities}
-Having analyzed WebAssemblys main vulnerability, the unmanaged linear memory, there are several ways to exploit these.  \cite{mcfadden_security_2018} show two attack primitives, format-string attacks and stack-based buffer overflows. They use these attack primitives to implement a proof of concept of a cross-site scripting attack, and remote code execution on a server.  \cite{lehmann_everything_2020} similarly first demonstrate two write primitves. They first introduce a stack-based buffer overlfow. They also demonstrate how the allocators supplied by emscripten are succeptible to the so-called unlink exploit. This can be utilized to allow an attacker to write an arbitrary value to an arbitrary adress. However, we couldn't recreate their exploit using the current version of emscripten. Nevertheless, we will quickly summarize the presented attack primitives. Afterwards we will demonstrate our attempt to recreate these attack primitives.
+\section{Exploiting Vulnerabilities}
+Having analyzed WebAssemblys main vulnerability, the unmanaged linear memory, there are several ways to exploit it.  \cite{mcfadden_security_2018} show two attack primitives, format-string attacks and stack-based buffer overflows. They use these attack primitives to implement a proof of concept of a cross-site scripting attack, and remote code execution on a server.
+\cite{lehmann_everything_2020} similarly first demonstrate two write primitves. They first introduce a stack-based buffer overlfow. They also demonstrate how the allocator supplied by emscripten is succeptible to the so-called unlink exploit. This can be utilized to allow an attacker to write an arbitrary value to an arbitrary adress. However, we couldn't recreate their exploit using the current version of emscripten. Nevertheless, we will quickly summarize the presented attack primitives. Afterwards we will demonstrate our attempt to recreate these attack primitives. It must be remarked that the main source of security of WebAssembly comes from the fact that it is isolated from the surrounding environment by the Virtual Machine. Thus, for an exploit to be dangerous in the browser it needs to manipulate data that gets passed to functions which can have an effect outside the isolated program. In the broser, such functions will be imported from Javscript. Examples are functions such as \textbf{eval} or functions which manipulate the DOM. \textbf{Eval} is a Javascript function which will execute any string passed to it as Javascript code. They also quickly describe how user-supplied data could lead to a stack overflow. Since WebAssembly has no guard pages, a stack overflow could overwrite data following the stack. However, no example of an exploit is given. 
 
-\subsection{format string attacks}
+\subsection{Overflowing the unmanaged stack}
+\label{sec:stack_buffer_overflow}
+Overflowing buffers on the stack is one of the most widely used binary exploitation technique. It can happen whenever user-supplied data is copied into a buffer on the stack (such as a fixed-size array) without checking the bounds. The most common example of a function which has this vulnerability is the C function \textbf{gets}. The linux manual even states "never use gets". There are many ways to exploit a stack based buffer overflow. In native binaries without mitigations such as stack canaries, a buffer overflow can be used to overwrite the functions return adress. This can lead to executing arbitrary code with the permissions of the program. However, since the WebAssembly Virtual Machine manages return adresses seperately, one could assume that stack based buffer overflows can't be as easily abused. However, if the function has non-scalar data, it will have memory on the unmanaged stack. In fact, since there exist no stack canaries in WebAssembly, a buffer overflow can overwrite any memory before the functions stack frame. This can even include parent frames. Additionally, there are no guard pages in WebAssembly so a stack based buffer overflow can grow into other memory regions such as the heap. \cite{lehmann_everything_2020} have serveral examples to demonstrate this vulnerability. \ref{fig:vuln_example_stack_overflow} shows an example inspired by them. The parent function \textbf{f} has a seemingly const string which gets added to the dom. If the user provided input overflows the local buffer and into the string, it can be used to cause damage outside the isolated program.
 
-\subsection{Stack Based buffer overflows}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{stack_buffer_overflow}
+  \caption{This c program has a stack overflow vulnerability. This can be exploited by the user supplying a buffer which overflows into the parent frame and replaces the string meant to be added to the DOM.}  
+\label{fig:vuln_example_stack_overflow}
+\end{figure}
 
-\subsection{Heap Metadata corruption}
+\subsection{Redirecting Control Flow}
+Can we influence the program control flow using an overflow as introduced in \ref{sec:stack_buffer_overflow}? Since the return adresses are managed by the Virtual machine, the answer seems to be no. However, it is possible to overwrite indirect function calls. As discussed in \ref{sec:indirect_calls}, WebAssembly references functions by an Integer. The indirect function call can be influenced if two conditions are met:
+
+\begin{itemize}
+\item The Integer which identifies the called function lies somewhere in unmanaged memory.
+\item The originally called function has the same arguments and return type as the newly called function.
+\end{itemize}
+
+Also, if we wish to influence the parameters passed to the newly passed function they too must be within unmanaged memory. The most interesting fact is that, since WebAssembly has no way to mark memory as read-only, it is possible to overwrite supposedly constant data. \cite{mcfadden_security_2018} demonstrate a proof of concept of using a overflow to manipulate control flow. We couldn't recreate their exact example, however a slight modification did work. The example in Figure \ref{fig:vuln_example_redirect_control_flow} works on Firefox version 88.0.1 64-Bit when compiled with emscripten version 1.39.16. The imagined scenario is that of a legacy application being ported to WebAssembly. It is possible to send messages and handle them using different functions. A spcially crafted payload can be used to overflow into the \textbf{msg\_len} and \textbf{out} member fields, changing the program behaviour. Again, it uses an unchecked memory copy to alter the control flow. This is used to implement a cross-site scripting attack. When the code is executed in the browser, it displays an alert. Of course, one can imagine using this to steal cookies, etc.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{redirect_control_flow}
+  \caption{This c program shows a proof of concept of redirecting control flow. By passing a particular payload, we can execute arbitrary code on the browser.}  
+  \label{fig:vuln_example_redirect_control_flow}
+\end{figure}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{redirect_control_flow_result}
+ \caption{The result of running the code in Figure \ref{fig:vuln_example_redirect_control_flow} in the browser.}  
+  \label{fig:vuln_example_redirect_control_flow_result}
+\end{figure}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{Wasm-Vuln}
