@@ -343,7 +343,7 @@ void f() {
 \label{fig:vuln_example_redirect_control_flow}
 \end{figure}
 
-Static program analysis techniques reason about the program without executing it. Thus, the analysis has to reason about the properties of the program by abstracting it.
+Static program analysis techniques reason about the program without executing it. Thus, the analysis has to reason about the properties of the program by abstracting it. The biggest analysis trying to find vulnerabilities in real-world WebAssembly programs undertaken thus far utilizes static analysis with a heuristic.
 
 Dynamic binary analysis techniques on the other hand work by executing the program for some input and observing its behavior. Generating these inputs is most commonly done by a tool called a Fuzzer \cite{li_fuzzing_2018}. These aim to generate inputs that trigger interesting behavior in the target program. Creating a Fuzzer which generate input that successfully triggers crashes is far from trivial. At a high level, Fuzzers are either coverage or taint based. Coverage based Fuzzers aim at generating inputs which maximize the percentage of executed code. Taint based Fuzzers analyze which parts of the code are influenced (tainted) by user input. These analyses require some understanding of the source program. Thus, it seems natural that effective Fuzzers utilize some kind of static analysis. Thus, the separation into static and dynamic techniques isn't very strict.
 
@@ -380,7 +380,7 @@ Given the above results, it seems quite a lot of real-world binaries are potenti
 
 \subsubsection{The analyses are incomplete}
 \label{sec:analyses_incomplete}
-One reason that might explain the discrepancy between the many binaries which have at least one vulnerability  and the lack of exploits in the wild is that the analyses we discussed are leaving out some important factor which makes exploits way less likely. For example, many of the binaries which import some dangerous function might never take any user input which might exploit them. The way to test this would be to test the collected binaries as to whether they take user input and which parts of the code are affected by this input. This could use the taint analysis discussed in \ref{sec:wasm_analysis}. It would be interesting to see how many binaries use both unmanaged memory, import an unsafe function, and allow user supplied input to affect the programs behavior. This could be an interesting avenue for future work.
+One reason that might explain the discrepancy between the many binaries which have at least one vulnerability  and the lack of exploits in the wild is that the analyses we discussed are leaving out some important factor which makes exploits way less likely. For example, many of the binaries which import some dangerous function might never take any user input which might exploit them. The way to test this would be to test the collected binaries as to whether they take user input and which parts of the code are affected by this input. This could use the taint analysis discussed in \ref{sec:wasm_analysis}. It would be interesting to see how many binaries use both unmanaged memory, import an unsafe function, and allow user supplied input to affect the programs behavior. This could be an interesting avenue for future work. The analysis done so far rely on static analysis and a heuristic, which isn't sophisticated compared to state-of-the-art program analysis techniques available for native binaries.
 
 \subsubsection{There are easier or more lucrative targets}
 \label{sec:better_targets}
@@ -393,7 +393,7 @@ It might also be the case that WebAssembly's VM together with the sandboxed memo
 Given more time, it seems likely that whether WebAssembly allows for more exploits than expected will come to light as more and more Websites start using it. Wider adoption would finding exploits more lucrative and thus, more likely. It seems plausible that the reason why there haven't been any widely talked about WebAssembly exploits (especially following the publication of \cite{lehmann_everything_2020}) is due to a mixture of the factors discussed above.
 
 \section{Conclusion}
-
+We introduced the concepts behind the WebAssembly binary format and execution environment, especially regarding possible vulnerabilities. Security inherent to WebAssembly is a selling point of WebAssembly. Despite that, unmanaged memeory in combination with indirect calls and the lack of common exploit mitigation techniques, we should the existence of proof of concept attacks. These would, for example, enable cross site scripting. Discussing a large analysis on real world binaries which comprises over 8000 binaries, we discussed that a large percentage of them has some sort of vulnerability as introduced before. This leads to an apparent contradiction when considering the fact that there haven't been any widely reported exploits unique to WebAssembly. We concluded by presenting some future avenues for research. 
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{Wasm-Vuln}
