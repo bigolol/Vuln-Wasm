@@ -30,6 +30,30 @@
 \AtBeginDocument{%
   \providecommand\BibTeX{{%
     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+    
+\usepackage{listings}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+    
+\lstdefinestyle{CStyle}{
+  language=C,                % choose the language of the code
+  commentstyle=\color{mygreen},    % comment style
+  keywordstyle=\color{blue},       % keyword style
+  numbers=left,                   % where to put the line-numbers
+  stepnumber=1,                   % the step between two line-numbers.        
+  numbersep=5pt,                  % how far the line-numbers are from the code
+  backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+  showspaces=false,               % show spaces adding particular underscores
+  showstringspaces=false,         % underline spaces within strings
+  showtabs=false,                 % show tabs within strings adding particular underscores
+  tabsize=2,                      % sets default tabsize to 2 spaces
+  captionpos=b,                   % sets the caption-position to bottom
+  breaklines=true,                % sets automatic line breaking
+  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+  title=\lstname,                 % show the filename of files included with \lstinputlisting;
+}
 
 %% Rights management information.  This information is sent to you
 %% when you complete the rights form.  These commands have SAMPLE
@@ -134,13 +158,13 @@
 %% A "teaser" image appears between the author and affiliation
 %% information and the body of the document, and typically spans the
 %% page.
-\begin{teaserfigure}
-  \includegraphics[width=\textwidth]{sampleteaser}
-  \caption{Seattle Mariners at Spring Training, 2010.}
-  \Description{Enjoying the baseball game from the third-base
-  seats. Ichiro Suzuki preparing to bat.}
-  \label{fig:teaser}
-\end{teaserfigure}
+%%\begin{teaserfigure}
+  %%\includegraphics[width=\textwidth]{sampleteaser}
+  %%\caption{Seattle Mariners at Spring Training, 2010.}
+  %%\Description{Enjoying the baseball game from the third-base
+  %%seats. Ichiro Suzuki preparing to bat.}
+  %%\label{fig:teaser}
+%%\end{teaserfigure}
 
 %%
 %% This command processes the author and affiliation and title
@@ -148,14 +172,18 @@
 \maketitle
 
 \section{Introduction}
-WebAssembly is a binary code format and compilation target meant to bring performance to web applications.  The initial design of the API and binary format of WebAssembly got completed in 2017 \cite{wasm_roadmap}. Since then, most major browsers such as Firefox, Chrome or Safari implement many of the proposed features. Even in the backend it is possible to run code compiled to WebAssembly for example when using Nodejs. The promise of running code with near native performance in the browser is very attractive, as it allows for more demanding web applications and smoother user experiences. However, since any Website visited by the user can download and execute WebAssembly code just like Javascript, it immediately raises security concerns. On the one hand, a malicious website could execute malware on the host PC or use computing ressources by executing a crypto miner. On the other hand, a vulnerable WebAssembly program which takes user input could lead to cross site scripting attacks in the browser. Worse yet, as WebAssebly gets adopted in the backend or even in stand-alone applications, vulnerabilities in WebAssembly programs could enable attacks such as Remote Code Execution. This survey will mainly deal with issues of the latter kind, focusing on how WebAssembly programs might be vulnerable to binary exploits. In particular, we will focus on how the security mechanisms intrinsic to WebAssembly's design compare to binary exploit mitigations in native applications. 
-The official spec adresses some of the security concerns by stating that "[...] code is validated and executes in a memory-safe*, sandboxed environment preventing data corruption or security breaches". However, it adds a footnote which specifies "*No program can break WebAssembly’s memory model. Of course, it cannot guarantee that an unsafe language compiling to WebAssembly does not corrupt its own memory layout, e.g. inside WebAssembly’s linear memory". Indeed, in the past years there have been a few puplications commenting on WebAssembly's lack of mitigations to common binary exploitation techniques, such as \cite{mcfadden_security_2018} or \cite{lehmann_everything_2020}. Additionally, there have been puplications researching the real-world assembly programs such as \cite{musch_new_2019} or \cite{hilbig_empirical_2021}. In this survey, we aim to cover the main points of these publications and try to recreate their main results. It is structured as follows: \ref{sec:wasm} will introduce WebAssembly with a focus on the features which will be important to our discussion later. ASDASDASDASD
+WebAssembly is a binary code format and compilation target meant to bring performance to web applications.  The initial design of the API and binary format of WebAssembly got completed in 2017 \cite{wasm_roadmap}. Since then, most major browsers such as Firefox, Chrome or Safari implement many of the proposed features. Even on the server it is possible to run code compiled to WebAssembly for example when using Nodejs. The promise of running code with near native performance in the browser is very attractive, as it allows for more demanding web applications and smoother user experiences. However, since any Website visited by the user can download and execute WebAssembly code just like Javascript, it immediately raises security concerns. On the one hand, a malicious website could execute malware on the host PC or use computing ressources by executing a crypto miner. On the other hand, a vulnerable WebAssembly program which takes user input could lead to cross site scripting attacks in the browser. Worse yet, as WebAssebly gets adopted in the backend or even in stand-alone applications, vulnerabilities in WebAssembly programs could enable attacks such as Remote Code Execution. This survey will mainly deal with issues of the latter kind, focusing on how WebAssembly programs might be vulnerable to binary exploits. In particular, we will focus on how the security mechanisms intrinsic to WebAssembly's design compare to binary exploit mitigations in native applications. As such, this can be seen as a comparison between exploits in native binaries and WebAssembly binaries.
 
-\section{WebAssembly}
+Security is a major selling point of WebAssembly as a platform and was a big concern when it was designed. One publication notes "At worst, a buggy or malicious WebAssembly program can make a mess of the data in its own memory" \cite{rossberg_bringing_2018}. The official spec itself addresses security concerns by stating that "[...] code is validated and executes in a memory-safe*, sandboxed environment preventing data corruption or security breaches". However, it adds a footnote which specifies "*No program can break WebAssembly’s memory model. Of course, it cannot guarantee that an unsafe language compiling to WebAssembly does not corrupt its own memory layout, e.g. inside WebAssembly’s linear memory". Indeed, in the past years there have been a few puplications commenting on WebAssembly's lack of mitigations to common binary exploitation techniques, such as \cite{mcfadden_security_2018} or \cite{lehmann_everything_2020}. Additionally, there have been puplications researching the real-world assembly programs such as \cite{musch_new_2019} or \cite{hilbig_empirical_2021}. In this survey, we aim to cover the main points of these publications and comment on how well WebAssembly is protected against binary exploits by design. 
+
+\section{Background}
+\label{sec:background}
+This survey aims at researching the binary vulnerabilities of WebAssembly. To this end, it is interesting to compare how it stacks up next to classical security concerns of native binaries. There are many different binary exploits, and securing against them seems a ever changing arms race between security professionals and hackers. We will mainly concern ourselves with vulnerabilities which are due to some form of user input. These inputs can be a string, file, or key sequence which somehow triggers unexpected behavior in our program. To do so, we will first give a deep dive into WebAssembly and how it, as a compilation target, differs from native binary formats and execution environments. Then, we will discuss how this influences typical vulnerabilities such as Stack or Buffer overflows, which can be triggered by malicious user input.
+
+\subsection{WebAssembly: High Level Overview}
 \label{sec:wasm}
 The following will give an Introduction to and and overview of WebAssembly, paying special attention to the parts relevant to a discussion of binary vulnerabilities. For more information, see the official specification at \cite{webAssembly_spec_2021}, or the Background section in \cite{lehmann_everything_2020}. 
 
-\subsection{High Level Overview}
 The name 'WebAssembly' (often abbreviated as WASM) is a slight misnomer, since it has a different form and function from typical assembly languages. The official spec refers to it as "low-level, assembly-like". It is a binary byte code format which is interpreted by a Virtual Machine, similar to for example Java. The Virtual Machine is most often implemented in a browser. Design goals were to make WebAssembly safe, hardware- and language independent and fast. In fact, WebAssembly is supposed to run at near-native speeds. There exists a human-readable format of WebAssembly binaries called 'wat'. Whenever we present WebAssembly Code, it will be in this format. While it is possible to hand-craft wasm binary, it is most often generated by compiling a high-level language such as C/C++ or Rust. The Binary is then instantiated by calling a Javascript function. See \ref{fig:wasm_init_firefox}. By itself, a compiled WebAssembly module has now way of communicating with the host environment such as a Browser (assuming a Bug-free Virtual Machine). WebAssembly functionality can only be accessed by calling functions which are exported by the WebAssembly module. These exported functions can be called from Javascript code. Conversely, WebAssembly has no I/O other than what is directly supplied through imported Javascript functions. 
 
 \begin{figure}[h]
@@ -167,6 +195,19 @@ The name 'WebAssembly' (often abbreviated as WASM) is a slight misnomer, since i
 
 \subsection{Modules}
 At the highest level, WebAssembly programs are organized into Modules.  A module is what gets compiled and run by the Virtual Machine. Amongst other things, a module contains definitions for imports and exports, functions, types, tables and memories. All definitions are referenced by zero-based indices. As of the time of writing, only one memory may be defined in a module. This memory is indexed by 0 and implicitely referenced by all other constructs. More on memory in \ref{sec:memories}. Also as of time of writing the only table elements which are available are untyped function references. This is used to implement indirect function calls, see \ref{sec:indirect_calls}. For an example of WebAssembly code, see 
+
+\begin{lstlisting}[style=CStyle]
+char *str = "Hello world\n";
+
+char *indirect_func() {
+	return str;
+}
+
+WASM_EXPORT
+char *direct_func(int i) {
+	
+} 
+\end{lstlisting}
 
 \begin{figure}[h]
   \centering
@@ -215,8 +256,9 @@ Additionally, functions in WebAssembly are type checked. The \textbf{call\_indir
 \label{fig:wasm_function_type_checking}
 \end{figure}
 
+
 \subsection{Deployment, Compilers and Toolchains}
-It would be very impractical (albeit possible) to write WebAssembly from scratch. Thus, several Backends exist to generate WebAssembly bytecode from high-level languages such as C, Go or Rust. Emscripten \cite{emscripten} can not only generate the Bytecode from C/C++ but also generate Html and Javascript to load and run the WebAssembly module. It also comes with C Headers to interact with the Browser and implements several common libraries such as SDL2 \cite{sdl2}.  
+It would be very impractical (albeit possible) to write WebAssembly from scratch. Thus, several Backends exist to generate WebAssembly bytecode from high-level languages such as C, Go or Rust. Emscripten \cite{emscripten} can not only generate the Bytecode from C/C++ but also generate Html and Javascript to load and run the WebAssembly module. It also comes with C Headers to interact with the Browser and implements several common libraries such as SDL \cite{sdl2}.  
 
 \section{Binary Vulnerabilities of WebAssembly programs}
 \label{sec:binary_vulns}
@@ -277,6 +319,46 @@ The above example is particularly interesting since it could only work in WebAss
   \caption{This code demonstrates a proof of concept of an exploit using indirect calls to influence control flow and implement cross site scripting.}  
 \label{fig:vuln_example_redirect_control_flow}
 \end{figure}
+
+\section{Binary vulnerability discovery}
+\subsection{Native Binaries}
+Trying to find out whether a program will crash is equivalent to the Halting problem. Thus, automating the discovery of binary vulnerabilities is a hard problem. We will first give some background on different techniques that have been developed for native binaries. Then, we will show which solutions exist for WebAssembly. A thorough summary of these techniques is outside the scope of this work, however we aim to give an intuitive understanding. See for example \cite{sun_new_2018} for a more thorough review.
+
+Techniques to discover binary vulnerabilities can roughly be divided into two categories: Static and dynamic analysis techniques \cite{shoshitaishvili_sok_2016}. A concept which will be interesting in this discussion is representing programs as Control Flow Graphs (CFGs). In such a graph, the nodes are instructions and the edges possible execution flows between these instructions. There exist algorithms to automatically generate CFGs from binary programs. This is, however not an exact science. One of the problems is deciding how to trade-off false positive edges. This is especially the case when dealing with indirect or conditional jumps. While a CFG with zero edges would have no false positives, a CFG with edges between any two program instructions would surely contain all possible jumps and many false positives. 
+
+\begin{lstlisting}[style=CStyle, label=code:control_flow_example, caption={This pseudocode corresponds to the control flow graph in Figure \ref{fig:vuln_example_redirect_control_flow}}]
+void f() {
+	while(n < 1000) {
+		n := n + 1;	
+	}
+}
+\end{lstlisting}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[height=5cm]{control-flow-graph}
+  \caption{A Control Flow Graph derived from the Pseudocode in listing \ref{code:control_flow_example}}  
+\label{fig:vuln_example_redirect_control_flow}
+\end{figure}
+
+Static program analysis techniques reason about the program without executing it. Thus, the analysis has to reason about the properties of the program by abstracting it.
+
+Dynamic binary analysis techniques on the other hand work by executing the program for some input and observing its behavior. Generating these inputs is most commonly done by a tool called a Fuzzer \cite{li_fuzzing_2018}. These aim to generate inputs that trigger interesting behavior in the target program. Creating a Fuzzer which generate input that successfully triggers crashes is far from trivial. At a high level, Fuzzers are either coverage or taint based. Coverage based Fuzzers aim at generating inputs which maximize the percentage of executed code. Taint based Fuzzers analyze which parts of the code are influenced (tainted) by user input. These analyses require some understanding of the source program. Thus, it seems natural that effective Fuzzers utilize some kind of static analysis. Thus, the separation into static and dynamic techniques isn't very strict.
+
+An analysis method which lies somewhere in between static in dynamic methods is is Abstract Interpretation. Abstract interpretation is a method of based on programming language semantics and their fixed points \cite{cousot_abstract_2000}. Intuitively, the program is run in an abstract way where instead of using explicit values, it is run with all possible values of a given type. For example, instead of running a program using integers as input, the values are replaced by intervals. These Operands are also adjusted to act on the abstract value type. 
+
+A popluar open-source framework to implement binary analysis techniques is the python-based angr, introduced in \cite{shoshitaishvili_sok_2016}. It provides tools for loading binaries, computing CFGs, etc. \cite{boudjema_vyper_2020} builds on angr to implement VYPER, a tool which utilizes concolic execution of the binary target. This is supposed to lower the amount of false positives. 
+
+There has also been work trying to utilize deep neural nets to locate faults in native binaries, for example \cite{li_locating_2019}.
+
+\subsection{WebAssembly}
+\label{sec:wasm_analysis}
+There are several tools and approaches to specifically analyze WebAssembly Binaries to locate possible exploits. One proposed tool, Wasmati, is introduced in \cite{lopes_discovering_2021}. It aims to utilize Code Property Graphs. While promising, it has yet to be implemented and tested. TaintAssembly, introduced in \cite{fu_taintassembly_2018} tracks taint through binaries using a modified V8 Javascript Engine. This comes with some limitations however such as not propagating indirect taint. It also seems like it wasn't ever evaluated on finding vulnerabilities in real-world vulnerabilities. \cite{sun_poster_2021} describes a deep neural net architecture to find vulnerabilities in WebAssembly binaries, the WASP framework. However, it has yet to be evaluated on more real-world binaries. Preliminary results seem promising, however. 
+
+Wasabi \cite{lehmann_wasabi_2018} is a Rust-based tool aimed at enabling the writing analyses of WebAssembly binaries. The analysis code is written in Javascript by utilizing hooks provided by the framework. The WebAssembly instructions are grouped to make writing analyses easier. Thus, for example, there is one hook for all function calls. If implemented, a user-implemented callback is run on WebAssembly function calls while the function name and other information gets passed to the callback. Only those hooks which are implemented in the analysis get put into the binary to improve performance. Wasabi is the basis for the static analysis tools presented in \cite{lehmann_everything_2020} and \cite{hilbig_empirical_2021}. It is also used in \cite{sun_poster_2021}. Since these will form the basis for the analysis of real-world binaries which will be presented in REF REAL WORLD, we will go into more depths on how they are implemented. As mentioned above, a static analysis tool is presented which uses heuristics to try and find possible vulnerabilities. Using the Wasabi Rust implementation as a library, the stack pointer is identified. This is done using a heuristic which looks for a variable of type i32 which is mutable, written to and read from globally, and has at least three reads and writes to avoid false positives in small binaries. This heuristic seems to work well according to manual verification. To identify possible vulnerabilities the tool looks for either of the following: use of the unmanaged stack as introduced in \ref{sec:wasm_stack}, unsafe memory allocators such as emmalloc \ref{sec:binary_vulns} or access to potentially dangerous imported functions such as \textbf{eval}. The results will be discussed in ANALYSIS DISCUSSION
+
+\section{Real-World WebAssembly Binaries}
+To date, there exist three major analyses of WebAssembly binaries "in the wild": One in 2019 \cite{musch_new_2019} focused on the way WebAssembly is used by the most popular websites. \cite{lehmann_everything_2020} uses the WebAssembly static analysis tool explained in \ref{sec:wasm_analysis} on real-world WebAssembly to ascertain whether the vulnerabilities they uncovered exist in deployed code. Finally, in 2021 \cite{hilbig_empirical_2021} ran the thus far largest analysis combining the methods of both \cite{musch_new_2019} and \cite{lehmann_everything_2020}. Since their results refine the previous work and comprise a much larger dataset (8,461 unique WebAssembly binaries), we will focus on them. Regarding the use of the unsafe, unmanaged memory, 65\% of the tested programs make use of it. Looking at the deployed, potentially unsafe memory allocators, only 11 binaries use emmalloc. 38,6\% of all binaries use custom, unknown allocators. Of the known, non-standard allocators, 37\% are from EOSIA, a WebAssembly platform for smart contracts. The final analyzed vulnerability concerns imported functions which are potentially harmful, such as code execution or file accesses. These functions are separated into categories, whose import name is searched for in the binaries. While 21,2\% of the binaries import at least one potentially harmful function, the overwhelming majority are I/O functions.
 
 
 \bibliographystyle{ACM-Reference-Format}

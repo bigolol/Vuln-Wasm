@@ -1,0 +1,22 @@
+in 3., binary vulnerabilities, dazu sagen was das target ist: malicious inputs. 
+Später nochmal aufgreifen.
+
+5. Wie kann ich exploits finden/discovery. Statische analyse, formale verifikation, etc.
+Fuzzing oder so? 
+
+vulnerabilities in the wild, danach discussion warum nicht wirklich exploits existieren?
+
+evtl wegen verwendung von wasms? Bisschen auseinandernehmen warum es so ist
+
+malicious programs in related work.
+
+dann conclusion.
+
+für quellen die nur urls sind: footnotes, nicht in den bibtex file! footnotem cmpare blablabla url.
+
+Codesnippets gleiche font größe? schauen wegen skalierung. 
+versuchen als listing einzubauen, kann auch c highlighting.
+gerne relativ klein auch. Selber font, selbe farben, etc beil allem. 
+Gleicher hintergrund.
+
+2. in Background umbennenen
