@@ -229,6 +229,7 @@ At the highest level, WebAssembly programs are organized into Modules.  A module
 			(local $l0 i32) (local $l1 i32)
 			[...]
 			i32.load offset=1040
+			
 			[...]
 			return9
 		(func $direct_func (export "direct_func") (type $t2) (param $p0 i32) (result i32)
@@ -261,21 +262,71 @@ WebAssembly only supports four different primitive types: 32- and 64-bit Integer
 \label{sec:indirect_calls}
 To implement indirect function calls, any function which may get called indirectly or used as a function pointer has an entry in the table section. The \textbf{call\_indirect} operation pops an index from the stack which is used to reference an entry in the table section. This table maps the index to a function. This limits which functions can be called indirectly. Figure \ref{fig:wasm_function_addr} shows example code to make this more intuitive. This code prints 1,2,1,3 to the console when running it in the browser.
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.5\textwidth]{function_addr_example}
-  \caption{This Code demonstrates how WebAssembly handles function pointers. This code prints 1,2,1,3 to the console when running it in the browser.}  
-\label{fig:wasm_function_addr}
-\end{figure}
+\begin{lstlisting}[language=C++, caption={This Code demonstrates how WebAssembly handles function pointers. This code prints 1,2,1,3 to the console when running it in the browser.}, label={fig:wasm_function_addr}]
+	#include <stdio.h>
+	#include <emscripten.h>
+
+	void printLine(const char *s) {
+		printf("%s\n", s);
+	}
+
+	void printInteger(const int i) {
+		printf("%i\n", i);
+	}
+
+	int main() {
+		printf("%i\n", &printLine);
+		printf("%i\n", &printInteger);
+		printf("%i\n", &printLine);
+		printf("%i\n", &emscripten_run_script);
+		return 0;
+	}
+\end{lstlisting}
 
 Additionally, functions in WebAssembly are type checked. The \textbf{call\_indirect} operation has the function type statically encoded. Thus, an indirect call can only call functions which have the same signature. It must be remarked however that this is less limiting than it might first appear, since WebAssembly only has four native types. Thus, a function taking a pointer (or a string) has the same signature as a function taking an 32-bit Integer. This is demonstrated by the code in . By copying the index of different functions directly into the function pointer, different functions get called indirectly. The function pointer supposedly takes a pointer to a char as argument. However, it is possible to use the index of a function taking an Integer as parameter. 
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.5\textwidth]{function_type_check_example}
-  \caption{Example demonstrating how function pointer type checking works.}  
-\label{fig:wasm_function_type_checking}
-\end{figure}
+\begin{lstlisting}[language=C++, caption={Example demonstrating how function pointer type checking works.}, label={fig:wasm_function_type_checking}]
+	#include <stdio.h>
+	#include <emscripten.h>
+	#include <cstring>
+
+	struct FunctionStruct {
+		void (*f) (const char *);
+	};
+
+	void printLine(const char *s) {
+		printf("%s\n", s);
+	}
+
+	void printInteger(const int i) {
+		printf("%i\n", i);
+	}
+
+	int main() {	
+		//using the adresses so they get put in the function table
+		printf("%i", &printLine);
+		printf("%i", &printInteger);
+		printf("%i\n", &emscripten_run_script);
+		
+		FunctionStruct fs;
+		char *printLineIndex = "\x01\x00\x00\x00";
+		memcpy(&fs, printLineIndex, 4);
+		//prints "printing line" to the console
+		fs.f("printing line"); 
+		
+		char *printIntegerIndex = "\x02\x00\x00\x00";
+		memcpy(&fs, printIntegerIndex, 4);
+		//prints 1059 to the console
+		fs.f("");
+		
+		char *runscriptIndex = "\x03\x00\x00\x00";
+		memcpy(&fs, runscriptIndex, 4);
+		//displays an alert
+		fs.f("alert('alert')");		
+		
+		return 0;
+	}
+\end{lstlisting}
 
 
 \subsection{Deployment, Compilers and Toolchains}
@@ -297,6 +348,7 @@ In this section we will discuss the security vulnerabilities of WebAssembly as p
    Stack Canaries & Stack-based Buffer overflows & Stack Canaries are placed on the stack such that a stack-based buffer overflow will overwrite them before corrupting the functions return adress. This enables the program to detect and handle these overflows & Stack canaries don't exist in WebAssembly, since the return adresses are entirely managed by the VM \\ \hline
    Heap Hardening & Manipulating Allocator Metadata & Heap Hardening comprises several different programming techniques to make Allocators more secure against attacks. By corrupting heap metadata, an attacker can use the allocator to execute arbitrary writes on the heap. & Since size is a concern, many toolchains deploy with their own smaller allocator which might have vulnerabilities.\\ \hline
    Data Execution Prevention (DEP) & Code injection & This mitigation is part of a family of mitigations which modify memory pages to only allow certain behaviour. These can modify whether the contents of certain memory pages can be executed. In native binaries, this can prevent the injection of malicious code & In webassembly, there is a strict seperation between code and data. Hence, DEP is not needed.
+\bottomrule
 \end{tabular}
 \label{table:exploit_mitigation_wasm}
 \caption{A summary of exploit mitigations commonly found in native binaries. They are compared to their WebAssembly counterparts, if they exist.}
@@ -334,25 +386,61 @@ Also, if we wish to influence the parameters passed to the newly passed function
 The imagined scenario is that of a legacy application being ported to WebAssembly. It is possible to send messages and handle them using different functions. A spcially crafted payload can be used to overflow into the \textbf{msg\_len} and \textbf{out} member fields, changing the program behaviour. Again, it uses an unchecked memory copy to alter the control flow. This is used to implement a cross-site scripting attack. When the code is executed in the browser, it displays an alert. Of course, one can imagine using this to steal cookies, etc.
 The above example is particularly interesting since it could only work in WebAssembly and not in other native programs.
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.5\textwidth]{redirect_control_flow}
-  \caption{This code demonstrates a proof of concept of an exploit using indirect calls to influence control flow and implement cross site scripting.}  
-\label{fig:vuln_example_redirect_control_flow}
-\end{figure}
+\begin{lstlisting}[language=C++, label=fig:vuln_example_redirect_control_flow, caption={This code demonstrates a proof of concept of an exploit using indirect calls to influence control flow and implement cross site scripting. Taken with modifications from \cite{mcfadden_security_2018}}]
+	#include <stdio.h>
+	#include <emscripten.h>
+	#include <stdint.h>
+	#include <cstring>
+
+	struct Communication {
+		char msg[64];
+		uint16_t msg_len;
+		void (*out) (const char *);
+	};
+
+	void printCommunication(Communication * comms) {
+		comms->out(comms->msg);
+	}
+
+	void printLine(const char *msg) {
+		printf("%s\n", msg);
+	}
+
+	int main() {
+		//use adress hereso it gets added to the import table
+		printf("%i\n", &emscripten_run_script); 
+
+		Communication comms;
+		comms.out = &printLine;
+		
+		char *payload = "alert('XSS');// " 	//16 byte attack script
+						"                " 	//16 byte padding
+						"                " 	//16 byte padding
+						"                " 	//16 byte padding
+						"  "				//2 byte padding
+						"\x40\x00"         	//msg_len=68
+						"\x01\x00\x00\x00";	//out=1
+						
+		memcpy(comms.msg, payload, 72);
+		printCommunication(&comms); //trigger the exploit
+		
+		return 0;
+	}
+\end{lstlisting}
+
 
 \section{Binary vulnerability discovery}
 \subsection{Native Binaries}
-Trying to find out whether a program will crash is equivalent to the Halting problem. Thus, automating the discovery of binary vulnerabilities is a hard problem. We will first give some background on different techniques that have been developed for native binaries. Then, we will show which solutions exist for WebAssembly. A thorough summary of these techniques is outside the scope of this work, however we aim to give an intuitive understanding. See for example \cite{sun_new_2018} for a more thorough review.
+Trying to find out whether a program will crash is equivalent to the Halting problem. Thus, automating the discovery of binary vulnerabilities is a hard problem. We will first give some background on different techniques that have been developed for native binaries. Then, we will show which solutions exist for WebAssembly. A thorough summary of these techniques is outside the scope of this work, however we aim to give an intuitive understanding for the techniques used in the state of the art. See for example \cite{sun_new_2018} for a more thorough review.
 
 Techniques to discover binary vulnerabilities can roughly be divided into two categories: Static and dynamic analysis techniques \cite{shoshitaishvili_sok_2016}. A concept which will be interesting in this discussion is representing programs as Control Flow Graphs (CFGs). In such a graph, the nodes are instructions and the edges possible execution flows between these instructions. There exist algorithms to automatically generate CFGs from binary programs. This is, however not an exact science. One of the problems is deciding how to trade-off false positive edges. This is especially the case when dealing with indirect or conditional jumps. While a CFG with zero edges would have no false positives, a CFG with edges between any two program instructions would surely contain all possible jumps and many false positives. 
 
 \begin{lstlisting}[language=C++, label=code:control_flow_example, caption={This pseudocode corresponds to the control flow graph in Figure \ref{fig:vuln_example_redirect_control_flow}}]
-void f() {
-	while(n < 1000) {
-		n := n + 1;	
+	void f() {
+		while(n < 1000) {
+			n := n + 1;	
+		}
 	}
-}
 \end{lstlisting}
 
 \begin{figure}[h]
@@ -379,20 +467,36 @@ There are several tools and approaches to specifically analyze WebAssembly Binar
 Wasabi \cite{lehmann_wasabi_2018} is a Rust-based tool aimed at enabling the writing analyses of WebAssembly binaries. The analysis code is written in Javascript by utilizing hooks provided by the framework. The WebAssembly instructions are grouped to make writing analyses easier. Thus, for example, there is one hook for all function calls. If implemented, a user-implemented callback is run on WebAssembly function calls while the function name and other information gets passed to the callback. Only those hooks which are implemented in the analysis get put into the binary to improve performance. Wasabi is the basis for the static analysis tools presented in \cite{lehmann_everything_2020} and \cite{hilbig_empirical_2021}. It is also used in \cite{sun_poster_2021}. Since these will form the basis for the analysis of real-world binaries which will be presented in REF REAL WORLD, we will go into more depths on how they are implemented. As mentioned above, a static analysis tool is presented which uses heuristics to try and find possible vulnerabilities. Using the Wasabi Rust implementation as a library, the stack pointer is identified. This is done using a heuristic which looks for a variable of type i32 which is mutable, written to and read from globally, and has at least three reads and writes to avoid false positives in small binaries. This heuristic seems to work well according to manual verification. To identify possible vulnerabilities the tool looks for either of the following: use of the unmanaged stack as introduced in \ref{sec:wasm_stack}, unsafe memory allocators such as emmalloc \ref{sec:binary_vulns} or access to potentially dangerous imported functions such as \textbf{eval}. The results will be discussed in ANALYSIS DISCUSSION
 
 \section{Real-World WebAssembly Binaries}
-To date, there exist three major analyses of WebAssembly binaries "in the wild": One in 2019 \cite{musch_new_2019} focused on the way WebAssembly is used by the most popular websites. \cite{lehmann_everything_2020} uses the WebAssembly static analysis tool explained in \ref{sec:wasm_analysis} on real-world WebAssembly to ascertain whether the vulnerabilities they uncovered exist in deployed code. Finally, in 2021 \cite{hilbig_empirical_2021} ran the thus far largest analysis combining the methods of both \cite{musch_new_2019} and \cite{lehmann_everything_2020}. Since their results refine the previous work and comprise a much larger dataset (8,461 unique WebAssembly binaries), we will focus on them. Regarding the use of the unsafe, unmanaged memory, 65\% of the tested programs make use of it, see Figure \ref{fig:analysis_unmanaged_stack}. Looking at the deployed, potentially unsafe memory allocators, only 11 binaries use emmalloc. 38,6\% of all binaries use custom, unknown allocators. Of the known, non-standard allocators, 37\% are from EOSIA, a WebAssembly platform for smart contracts. See Figure \ref{fig:analysis_used_alloc}. The final attack vector concerns imported functions which are potentially harmful. These functions are separated into categories such as file I/O or code execution. While 21,2\% of the binaries import at least one potentially harmful function, the overwhelming majority (20\% of all binaries) are I/O functions.
+To date, there exist three major analyses of WebAssembly binaries "in the wild": One in 2019 \cite{musch_new_2019} focused on the way WebAssembly is used by the most popular websites. \cite{lehmann_everything_2020} uses the WebAssembly static analysis tool explained in \ref{sec:wasm_analysis} on real-world WebAssembly to ascertain whether the vulnerabilities they uncovered exist in deployed code. Finally, in 2021 \cite{hilbig_empirical_2021} ran the thus far largest analysis combining the methods of both \cite{musch_new_2019} and \cite{lehmann_everything_2020}. Since their results refine the previous work and comprise a much larger dataset (8,461 unique WebAssembly binaries), we will focus on them. Regarding the use of the unsafe, unmanaged memory, 65\% of the tested programs make use of it, see Figure \ref{fig:analysis_unmanaged_stack}. Looking at the deployed, potentially unsafe memory allocators, only 11 binaries use emmalloc. 38,6\% of all binaries use custom, unknown allocators. Of the known, non-standard allocators, 37\% are from EOSIA, a WebAssembly platform for smart contracts. See Figure \ref{fig:analysis_used_alloc}. Figuring out whether these allocators have exploitable vulnerabilities requires further research. The final heuristic concerns imported functions which are potentially harmful. \cite{hilbig_empirical_2021} separates these functions into categories such as file I/O or code execution. While 21,2\% of the binaries import at least one potentially harmful function, the overwhelming majority of these cases (19\% of all binaries) are I/O functions. 
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.3\textwidth]{analysis_unmanaged_stack}
-  \caption{Result of analysis of memory usage in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
+  \caption{Result of an analysis of memory usage in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
 \label{fig:analysis_unmanaged_stack}
 \end{figure}
+
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.4\textwidth]{analysis_used_alloc}
-  \caption{Result of analysis of allocators used in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
+  \caption{Result of an analysis of allocators used in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
 \label{fig:analysis_used_alloc}
 \end{figure}
+
+\begin{table*}
+\label{table:analysis_import_harmful_functions}
+\caption{Result of an analysis of potentially harmful functions imported into WebAssembly modules. Taken from \cite{hilbig_empirical_2021}.}
+\begin{tabular}{l|l|l}
+  \toprule
+  Category & Patterns & Matches\\
+  \midrule
+  Code execution & eval, exec, execve, emscripten_run_script & 1.9\% \\ \hline
+  Network access & xhr, request, http, fetch & 2.0\% \\ \hline
+  File I/O  & file, fd, path & 19.0\% \\ \hline
+  Dynamic linking & dlopen, dlsym, dlclose  & 1.6\% \\ \hline
+  \bottomrule
+\end{tabular}
+\end{table*}
 
 \subsection{Discussion}
 Given the above results, it seems quite a lot of real-world binaries are potentially vulnerable. Despite this, it seems there are no known, widely deployed exploits targeting WebAssembly binaries. Using exploitdb (\url{https://www.exploit-db.com/}) and searching for either the terms 'wasm' or 'webassembly' yields one and three results, respectively. The last date back to 2018, the former to 2019. Additionally, all of them are exploits targeting the VM, not a WebAssembly Binary using some malicious input. Similarly, using google to search for the terms 'exploit webassembly', or 'webassembly binary exploit' doesn't yield any exploits on the first three pages. Given that \cite{mcfadden_security_2018} discussed potential WebAssembly vulnerabilities as far back as 2018, the question remains as to why there haven't been more exploits widely reported on. Especially regarding the fact that binary security remains one of the major selling points of WebAssembly, one would expect the discovery of an effective exploit in the wild to be widely shared. This seems to suggest that the unavailability of information regarding exploits correlates to there not being any. In what follows, we suggest reasons for why that might be with suggestions regarding how to test these hypothesis where applicable.
