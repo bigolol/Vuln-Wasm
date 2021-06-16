@@ -348,7 +348,6 @@ In this section we will discuss the security vulnerabilities of WebAssembly as p
    Stack Canaries & Stack-based Buffer overflows & Stack Canaries are placed on the stack such that a stack-based buffer overflow will overwrite them before corrupting the functions return adress. This enables the program to detect and handle these overflows & Stack canaries don't exist in WebAssembly, since the return adresses are entirely managed by the VM \\ \hline
    Heap Hardening & Manipulating Allocator Metadata & Heap Hardening comprises several different programming techniques to make Allocators more secure against attacks. By corrupting heap metadata, an attacker can use the allocator to execute arbitrary writes on the heap. & Since size is a concern, many toolchains deploy with their own smaller allocator which might have vulnerabilities.\\ \hline
    Data Execution Prevention (DEP) & Code injection & This mitigation is part of a family of mitigations which modify memory pages to only allow certain behaviour. These can modify whether the contents of certain memory pages can be executed. In native binaries, this can prevent the injection of malicious code & In webassembly, there is a strict seperation between code and data. Hence, DEP is not needed.
-\bottomrule
 \end{tabular}
 \label{table:exploit_mitigation_wasm}
 \caption{A summary of exploit mitigations commonly found in native binaries. They are compared to their WebAssembly counterparts, if they exist.}
@@ -466,35 +465,34 @@ There are several tools and approaches to specifically analyze WebAssembly Binar
 
 Wasabi \cite{lehmann_wasabi_2018} is a Rust-based tool aimed at enabling the writing analyses of WebAssembly binaries. The analysis code is written in Javascript by utilizing hooks provided by the framework. The WebAssembly instructions are grouped to make writing analyses easier. Thus, for example, there is one hook for all function calls. If implemented, a user-implemented callback is run on WebAssembly function calls while the function name and other information gets passed to the callback. Only those hooks which are implemented in the analysis get put into the binary to improve performance. Wasabi is the basis for the static analysis tools presented in \cite{lehmann_everything_2020} and \cite{hilbig_empirical_2021}. It is also used in \cite{sun_poster_2021}. Since these will form the basis for the analysis of real-world binaries which will be presented in REF REAL WORLD, we will go into more depths on how they are implemented. As mentioned above, a static analysis tool is presented which uses heuristics to try and find possible vulnerabilities. Using the Wasabi Rust implementation as a library, the stack pointer is identified. This is done using a heuristic which looks for a variable of type i32 which is mutable, written to and read from globally, and has at least three reads and writes to avoid false positives in small binaries. This heuristic seems to work well according to manual verification. To identify possible vulnerabilities the tool looks for either of the following: use of the unmanaged stack as introduced in \ref{sec:wasm_stack}, unsafe memory allocators such as emmalloc \ref{sec:binary_vulns} or access to potentially dangerous imported functions such as \textbf{eval}. The results will be discussed in ANALYSIS DISCUSSION
 
-\section{Real-World WebAssembly Binaries}
-To date, there exist three major analyses of WebAssembly binaries "in the wild": One in 2019 \cite{musch_new_2019} focused on the way WebAssembly is used by the most popular websites. \cite{lehmann_everything_2020} uses the WebAssembly static analysis tool explained in \ref{sec:wasm_analysis} on real-world WebAssembly to ascertain whether the vulnerabilities they uncovered exist in deployed code. Finally, in 2021 \cite{hilbig_empirical_2021} ran the thus far largest analysis combining the methods of both \cite{musch_new_2019} and \cite{lehmann_everything_2020}. Since their results refine the previous work and comprise a much larger dataset (8,461 unique WebAssembly binaries), we will focus on them. Regarding the use of the unsafe, unmanaged memory, 65\% of the tested programs make use of it, see Figure \ref{fig:analysis_unmanaged_stack}. Looking at the deployed, potentially unsafe memory allocators, only 11 binaries use emmalloc. 38,6\% of all binaries use custom, unknown allocators. Of the known, non-standard allocators, 37\% are from EOSIA, a WebAssembly platform for smart contracts. See Figure \ref{fig:analysis_used_alloc}. Figuring out whether these allocators have exploitable vulnerabilities requires further research. The final heuristic concerns imported functions which are potentially harmful. \cite{hilbig_empirical_2021} separates these functions into categories such as file I/O or code execution. While 21,2\% of the binaries import at least one potentially harmful function, the overwhelming majority of these cases (19\% of all binaries) are I/O functions. 
+\section{Analysis Real-World WebAssembly Binaries}
+To date, there exist three major analyses of WebAssembly binaries "in the wild": One in 2019 \cite{musch_new_2019} focused on the way WebAssembly is used by the most popular websites. \cite{lehmann_everything_2020} uses the WebAssembly static analysis tool explained in \ref{sec:wasm_analysis} on real-world WebAssembly to ascertain whether the vulnerabilities they uncovered exist in deployed code. Finally, in 2021 \cite{hilbig_empirical_2021} ran the thus far largest analysis combining the methods of both \cite{musch_new_2019} and \cite{lehmann_everything_2020}. Since their results refine the previous work and comprise a much larger dataset (8,461 unique WebAssembly binaries), we will focus mainly on their work. Afterwards, we will discuss their findings. Regarding the use of the unsafe, unmanaged memory, 65\% of the tested programs make use of it, see Figure \ref{fig:analysis_unmanaged_stack}. Looking at the deployed, potentially unsafe memory allocators, only 11 binaries use emmalloc. 38,6\% of all binaries use custom, unknown allocators. Of the known, non-standard allocators, 37\% are from EOSIA, a WebAssembly platform for smart contracts. See Figure \ref{fig:analysis_used_alloc}. Figuring out whether these allocators have exploitable vulnerabilities requires further research. The final heuristic concerns imported functions which are potentially harmful. \cite{hilbig_empirical_2021} separates these functions into categories such as file I/O or code execution. While 21,2\% of the binaries import at least one potentially harmful function, the overwhelming majority of these cases (19\% of all binaries) are I/O functions. 
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.3\textwidth]{analysis_unmanaged_stack}
+  \includegraphics[scale=1]{analysis_unmanaged_stack}
   \caption{Result of an analysis of memory usage in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
 \label{fig:analysis_unmanaged_stack}
 \end{figure}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.4\textwidth]{analysis_used_alloc}
+  \includegraphics[scale=1]{analysis_used_alloc}
   \caption{Result of an analysis of allocators used in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
 \label{fig:analysis_used_alloc}
 \end{figure}
 
 \begin{table*}
 \label{table:analysis_import_harmful_functions}
-\caption{Result of an analysis of potentially harmful functions imported into WebAssembly modules. Taken from \cite{hilbig_empirical_2021}.}
+\caption{Result of an analysis of potentially harmful functions imported into WebAssembly modules. Taken from \cite{hilbig_empirical_2021} with some modifications.}
 \begin{tabular}{l|l|l}
   \toprule
   Category & Patterns & Matches\\
   \midrule
-  Code execution & eval, exec, execve, emscripten_run_script & 1.9\% \\ \hline
+  Code execution & eval, exec, execve, emscripten\_run\_script & 1.9\% \\ \hline
   Network access & xhr, request, http, fetch & 2.0\% \\ \hline
   File I/O  & file, fd, path & 19.0\% \\ \hline
-  Dynamic linking & dlopen, dlsym, dlclose  & 1.6\% \\ \hline
-  \bottomrule
+  Dynamic linking & dlopen, dlsym, dlclose  & 1.6\%
 \end{tabular}
 \end{table*}
 
@@ -516,7 +514,7 @@ It might also be the case that WebAssembly's VM together with the sandboxed memo
 Given more time, it seems likely that whether WebAssembly allows for more exploits than expected will come to light as more and more Websites start using it. Wider adoption would finding exploits more lucrative and thus, more likely. It seems plausible that the reason why there haven't been any widely talked about WebAssembly exploits (especially following the publication of \cite{lehmann_everything_2020}) is due to a mixture of the factors discussed above.
 
 \section{Conclusion}
-We introduced the concepts behind the WebAssembly binary format and execution environment, especially regarding possible vulnerabilities. Security inherent to WebAssembly is a selling point of WebAssembly. Despite that, unmanaged memeory in combination with indirect calls and the lack of common exploit mitigation techniques, we should the existence of proof of concept attacks. These would, for example, enable cross site scripting. Discussing a large analysis on real world binaries which comprises over 8000 binaries, we discussed that a large percentage of them has some sort of vulnerability as introduced before. This leads to an apparent contradiction when considering the fact that there haven't been any widely reported exploits unique to WebAssembly. We concluded by presenting some future avenues for research. 
+We introduced the concepts behind the WebAssembly binary format and execution environment, especially regarding possible vulnerabilities. The security measures inherent to WebAssembly such as structured control flow and managed addresses are a selling point of WebAssembly. Despite that, unmanaged memeory in combination with indirect calls and the lack of common exploit mitigation techniques, we should the existence of proof of concept attacks. These would, for example, enable cross site scripting. Discussing a large analysis on real world binaries which comprises over 8000 binaries, we discussed that a large percentage of them has some sort of vulnerability as introduced before. This leads to an apparent contradiction when considering the fact that there haven't been any widely reported exploits unique to WebAssembly. We concluded by presenting some future avenues for research. 
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{Wasm-Vuln}
