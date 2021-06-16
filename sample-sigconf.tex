@@ -109,7 +109,7 @@
 %%
 %% The "title" command has an optional parameter,
 %% allowing the author to define a "short title" to be used in page headers.
-\title{Vulnerabilities in WebAssembly: A Survey}
+\title{Vulnerabilities in WebAssembly}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -365,9 +365,10 @@ Eval is a Javascript function which will execute any string passed to it as Java
 
 \subsection{Overflowing the unmanaged stack}
 \label{sec:stack_buffer_overflow}
-Overflowing buffers on the stack is one of the most widely used binary exploitation techniques. It can happen whenever user-supplied data is copied into a buffer on the stack (such as a fixed-size array) without checking the bounds. The most common example of a function which has this vulnerability is the C function gets. The Linux manual even states "never use gets". There are many ways to exploit a stack based buffer overflow. In native binaries without exploit mitigation techniques such as stack canaries, a buffer overflow can be used to overwrite the functions return address. This can allow an attacker to execute arbitrary code with the permissions of the program. However, since the WebAssembly VM manages return addresses separately, one could assume that stack based buffer overflows aren't security concerns for WebAssembly programs. However, if the function has non-scalar data, this will reside in unmanaged memory. In fact, since there exist no stack canaries in WebAssembly, a buffer overflow can overwrite any unmanaged memory above the function's stack frame. This can even include parent frames. Additionally, there are no guard pages in WebAssembly so a stack based buffer overflow can grow into other memory regions such as the heap. And, since there is no concept of read-only data in WebAssembly, any data on the unmanaged stack can potentially be overwritten. \cite{lehmann_everything_2020} have several examples to demonstrate this vulnerability. Listing \ref{fig:vuln_example_stack_overflow} shows an example inspired by their work. The main function generated a string which gets added to the DOM. Before then, it calls a vulnerable function. The user provided input can overflow the stack of the vulnerable function and into the stack of the main function. There, it can overwrite the string added to the DOM. This can lead to a cross site scripting attack.
+Overflowing buffers on the stack is one of the most widely used binary exploitation techniques. It can happen whenever user-supplied data is copied into a buffer on the stack (such as a fixed-size array) without checking the bounds. The most common example of a function which has this vulnerability is the C function gets. The Linux manual even states "never use gets". There are many ways to exploit a stack based buffer overflow. In native binaries without exploit mitigation techniques such as stack canaries, a buffer overflow can be used to overwrite the functions return address. This can allow an attacker to execute arbitrary code with the permissions of the program. However, since the WebAssembly VM manages return addresses separately, one could assume that stack based buffer overflows aren't security concerns for WebAssembly programs. However, if the function has non-scalar data, this will reside in unmanaged memory. In fact, since there exist no stack canaries in WebAssembly, a buffer overflow can overwrite any unmanaged memory above the function's stack frame. This can even include parent frames. Additionally, there are no guard pages in WebAssembly so a stack based buffer overflow can grow into other memory regions such as the heap. And, since there is no concept of read-only data in WebAssembly, any data on the unmanaged stack can potentially be overwritten. \cite{lehmann_everything_2020} have several examples to demonstrate this vulnerability. Listing \ref{fig:vuln_example_stack_overflow} shows an example inspired by their work. The main function generated a string which gets added to the DOM. Before then, it calls a vulnerable function. The user provided input can overflow the stack of the vulnerable function and into the stack of the main function. There, it can overwrite the string added to the DOM. This can lead to a cross site scripting attack. 
+\newpage
 
-\begin{lstlisting}[language=C++, caption={This c program has a stack overflow vulnerability. This can be exploited by the user supplying a buffer which overflows into the parent frame and replaces the string meant to be added to the DOM.}, label={fig:vuln_example_stack_overflow}]
+\begin{lstlisting}[language=C++, caption={This C program has a stack overflow vulnerability. This can be exploited by the user supplying a buffer which overflows into the parent frame and replaces the string meant to be added to the DOM.}, label={fig:vuln_example_stack_overflow}]
 	#include <emscripten.h>
 	#include <stdio.h>
 	#include <string.h>
@@ -485,7 +486,7 @@ There are several tools and approaches to specifically analyze WebAssembly Binar
 
 Wasabi \cite{lehmann_wasabi_2018} is a Rust-based tool aimed at enabling the writing analyses of WebAssembly binaries. The analysis code is written in Javascript by utilizing hooks provided by the framework. The WebAssembly instructions are grouped to make writing analyses easier. Thus, for example, there is one hook for all function calls. If present, a user-implemented callback function is triggered on WebAssembly function calls while the function name and other information gets passed to the callback. Only those hooks which are implemented in the Javscript analysis get put into the binary to improve performance. Wasabi is the basis for the static analysis tools presented in \cite{lehmann_everything_2020} and also used in \cite{hilbig_empirical_2021}. This tool performs static analysis utilizing heuristics to try and find possible vulnerabilities. Using the Rust-based Wasabi implementation as a library, the stack pointer in a given binary is identified. This is done using a heuristic which looks for a variable of type i32 which is mutable, written to and read from globally, and has at least three reads and writes to avoid false positives in small binaries. This heuristic seems to work well when checked against to manual verification. To identify possible vulnerabilities the tool looks for either of the following: use of unmanaged memory as introduced in section \ref{sec:wasm_stack}, unsafe memory allocators such as emmalloc (see section \ref{sec:binary_vulns}) or importing potentially dangerous functions such as eval.
 
-\section{Analysis Real-World WebAssembly Binaries}
+\section{Analysis of Real-World WebAssembly Binaries}
 \label{sec:real_world_wasm_analysis}
 To date, there exist three major analyses of different aspects of WebAssembly binaries "in the wild": One from 2019 \cite{musch_new_2019}, focused on the way WebAssembly is used by the 1 million most visited websites. \cite{lehmann_everything_2020} uses the WebAssembly static analysis tool explained in \ref{sec:wasm_analysis} on real-world WebAssembly programs to ascertain whether the vulnerabilities they discuss exist in deployed code. Finally, in 2021 \cite{hilbig_empirical_2021} ran the thus far largest analysis combining the methods of both \cite{musch_new_2019} and \cite{lehmann_everything_2020}. Since their results refine the previous work and comprise a much larger dataset (8,461 unique WebAssembly binaries), we will focus mainly on their work. Afterwards, we will discuss their findings in section \ref{sec:discussion}. 
 
@@ -545,7 +546,7 @@ We introduced WebAssembly binary format and execution environment, especially re
 
 %%
 %% If your work has an appendix, this is the place to put it.
-\appendix
+%% \appendix
 
 
 \end{document}
