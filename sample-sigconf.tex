@@ -34,27 +34,34 @@
     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
     
 \usepackage{listings}
+
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
 
-    
-\lstdefinestyle{CStyle}{
-  language=C,                % choose the language of the code
+\lstset{ 
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
   commentstyle=\color{mygreen},    % comment style
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  frame=single,	                   % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
   keywordstyle=\color{blue},       % keyword style
-  numbers=left,                   % where to put the line-numbers
-  stepnumber=1,                   % the step between two line-numbers.        
-  numbersep=5pt,                  % how far the line-numbers are from the code
-  backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
-  showspaces=false,               % show spaces adding particular underscores
-  showstringspaces=false,         % underline spaces within strings
-  showtabs=false,                 % show tabs within strings adding particular underscores
-  tabsize=2,                      % sets default tabsize to 2 spaces
-  captionpos=b,                   % sets the caption-position to bottom
-  breaklines=true,                % sets automatic line breaking
-  breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
-  title=\lstname,                 % show the filename of files included with \lstinputlisting;
+  morekeywords={*,...},            % if you want to add more keywords to the set
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=-3pt,                   % how far the line-numbers are from the code  
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=2,	                   % sets default tabsize to 2 spaces
+  title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
 }
 
 %% Rights management information.  This information is sent to you
@@ -198,40 +205,52 @@ The name 'WebAssembly' (often abbreviated as WASM) is a slight misnomer, since i
 \subsection{Modules}
 At the highest level, WebAssembly programs are organized into Modules.  A module is what gets compiled and run by the Virtual Machine. Amongst other things, a module contains definitions for imports and exports, functions, types, tables and memories. All definitions are referenced by zero-based indices. As of the time of writing, only one memory may be defined in a module. This memory is indexed by 0 and implicitely referenced by all other constructs. More on memory in \ref{sec:memories}. Also as of time of writing the only table elements which are available are untyped function references. This is used to implement indirect function calls, see \ref{sec:indirect_calls}. For an example of WebAssembly code, see 
 
-\begin{lstlisting}[style=CStyle]
-char *str = "Hello world\n";
+\begin{lstlisting}[language=C++, caption={A C program, which, when compiled without optimizations, gets translated to the code in Observe \ref{fig:wasm_example_wasm}.}, label=fig:wasm_example_c]
+	char *str = "Hello world\n";
 
-char *indirect_func() {
-	return str;
-}
+	char *indirect_func() {
+		return str;
+	}
 
-WASM_EXPORT
-char *direct_func(int i) {
-	
-} 
+	WASM_EXPORT
+	char *direct_func(int i) { 
+		char * (*ptr)(void) = &indirect_func;
+		return (*ptr)();
+	} 
 \end{lstlisting}
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.5\textwidth]{wasm_example_c}
-  \caption{A c program, which, when compiled without optimization, gets translated to the code in Figure  \ref{fig:wasm_example_wasm}.}
-\label{fig:wasm_example_c}
-\end{figure}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.5\textwidth]{wasm_example_wasm}
-  \caption{The c program in Figure \ref{fig:wasm_example_c} gets compiled to this WebAssembly program (with uninteresting parts removed). Observe the function table and memory.}  
-\label{fig:wasm_example_wasm}
-\end{figure}
+\begin{lstlisting}[language=C++, caption={The C program in Listing \ref{fig:wasm_example_c} gets compiled to this WebAssembly program (with uninteresting parts removed). Observe the indirect call, function table and memory region.}, label={fig:wasm_example_wasm}]
+	(module //start of the module, the unit of compilation in WebAssembly
+		(type $t0 (func (result i32)))
+		(type $t1 (func))
+		(type $t2 (func (param i32) (result i32)))
+		(func $__wasm_call_ctors (type $t1))
+		(func $indirect_func (type $t0) (result i32) //a function definition
+			(local $l0 i32) (local $l1 i32)
+			[...]
+			i32.load offset=1040
+			[...]
+			return9
+		(func $direct_func (export "direct_func") (type $t2) (param $p0 i32) (result i32)
+		(local $l0 i32) (local $l1 i32) (local $l2 i32) (local $l3 i32) (local $l4 i32) (local $l5 i32) (local $l6 i32) (local $l7 i32)
+		[...]
+		call_indirect (type $t0) //calling a function indirectly based on the index pushed onto the stack
+		[...]
+		return)
+	(table $T0 2 2 anyfunc)
+	(memory $memory (export "memory") 2) 
+	(elem (i32.const 1) $indirect_func) //indirect_func can get called indirectly by pushing '1' onto the stack 
+	(data (i32.const 1024) "Hello world\0a\00") //A string in memory. There exists no constant storage in WebAssembly.
+	(data (i32.const 1040) "\00\04\00\00"))
+\end{lstlisting}
 
 \subsection{The Stack}
 \label{sec:wasm_stack}
-The WebAssembly virtual machine is Stack based. Thus, it doesn't have registers. Instead, values are pushed on and popped of the stack. All instructions implicitely operate on the stack. 
+The WebAssembly virtual machine is conceptually stack based. In contrast to most native platforms, it doesn't have registers. Instead, values are pushed on and popped of the stack. Many instructions implicitly operate on the stack. See Listing \ref{fig:wasm_example_wasm} for an example.
 
 \subsection{Control Flow}
 \label{sec:wasm_control_flow}
-In contrast to native languages or even Java, WebAssembly enforces structured control flow. Code can only be organized into blocks. Control-flow commands can only jump to the beginning of such a block, and only within the current function. In addition, the bytecode never interacts with the underlying adresses of functions. These are only accesible to the Virtual Machine. This immediately makes many binary exploits infeasable, such as Return-Oriented Programming. 
+In contrast to native languages or even Java, WebAssembly enforces so-called 'structured' control flow. Code can only be organized into blocks. Control-flow commands can only jump to the beginning of such a block, and only within the current functison. In addition, the bytecode never interacts with the underlying addresses of functions. These are only accessible to the Virtual Machine. This immediately makes many binary exploits infeasable, such as Return-Oriented Programming. 
 
 \subsection{Memories} 
 \label{sec:memories}
@@ -328,7 +347,7 @@ Trying to find out whether a program will crash is equivalent to the Halting pro
 
 Techniques to discover binary vulnerabilities can roughly be divided into two categories: Static and dynamic analysis techniques \cite{shoshitaishvili_sok_2016}. A concept which will be interesting in this discussion is representing programs as Control Flow Graphs (CFGs). In such a graph, the nodes are instructions and the edges possible execution flows between these instructions. There exist algorithms to automatically generate CFGs from binary programs. This is, however not an exact science. One of the problems is deciding how to trade-off false positive edges. This is especially the case when dealing with indirect or conditional jumps. While a CFG with zero edges would have no false positives, a CFG with edges between any two program instructions would surely contain all possible jumps and many false positives. 
 
-\begin{lstlisting}[style=CStyle, label=code:control_flow_example, caption={This pseudocode corresponds to the control flow graph in Figure \ref{fig:vuln_example_redirect_control_flow}}]
+\begin{lstlisting}[language=C++, label=code:control_flow_example, caption={This pseudocode corresponds to the control flow graph in Figure \ref{fig:vuln_example_redirect_control_flow}}]
 void f() {
 	while(n < 1000) {
 		n := n + 1;	
