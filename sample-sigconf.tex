@@ -159,7 +159,7 @@
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-	WebAssembly is a binary bytecode format and compilation target originally designed for use together with Javascript to bring almost native performance to the web. Security mechanisms inherent to the language were a major focus during the design. Structured control flow and managed function return addresses make many popular exploits such as return-oriented programming impossible. However, research has shown that due to the absence of common exploit mitigation techniques, vulnerabilities in high-level languages such as C lead to vulnerabilities in compiled WebAssembly. We introduce the main vulnerabilities and demonstrate proof-of-concept exploits. An overview over the most promising software analysis techniques such as abstract interpretation or fuzzing is presented. We introduce the most up-to-date analysis on real-world WebAssembly binaries. It seems to suggest that many deployed programs have some of the discussed vulnerabilities. Despite this, there are no known widely circulated exploits. We present some reasons as to what might explain this discrepancy.
+	WebAssembly is a binary bytecode format and compilation target originally designed for use together with Javascript to bring almost native performance to the web. Security mechanisms inherent to the language were a major focus during the design. Structured control flow and managed function return addresses make many popular exploits such as return-oriented programming impossible. However, recent publications claim to show that due to the absence of common exploit mitigation techniques, vulnerabilities in high-level languages such as C lead to vulnerabilities in compiled WebAssembly. We introduce the main vulnerabilities and demonstrate proof-of-concept exploits. An overview over the most promising software analysis techniques such as abstract interpretation or fuzzing is presented. We introduce the most up-to-date analysis on real-world WebAssembly binaries. It seems to suggest that many deployed programs have some of the discussed vulnerabilities. Despite this, there are no known widely circulated exploits. We present some reasons as to what might explain this discrepancy.
 \end{abstract}
 
 %%
@@ -370,7 +370,7 @@ To distinguish between the function call stack managed by the VM and the call st
 
 \citet{lehmann_everything_2020} also discuss common mitigations such as ASLR and page protection flags which are not present in WebAssembly. In particular, since there are no guard pages between the different sections of the linear memory, an overflow in any section can corrupt data in any other section. And since there is no concept of read-only memory, even data which is marked as constant in the source code can be overwritten during execution. In summary, the unmanaged, linear memory has the biggest potential to lead to exploits.
 
-\section{Exploiting potential of unmanaged memory}
+\section{Exploit potential of unmanaged memory}
 Having analyzed WebAssemblys main vulnerability, the unmanaged linear memory, there are several ways to exploit it. \citet{mcfadden_security_2018} show two attack primitives, format-string attacks and stack-based buffer overflows. They use these attack primitives to implement a proof of concept of a cross-site scripting attack, and remote code execution on a server.
 \citet{lehmann_everything_2020} similarly start by demonstrating two write primitves: First, they introduce a stack-based buffer overflow. Secondly, they also demonstrate how the allocator supplied by emscripten (called \texttt{emmalloc}) is susceptible to the so-called 'unlink exploit'. Given the right circumstances, this can be utilized to allow an attacker to write an arbitrary value to an arbitrary address. However, their exploit didn't work on our machine using version 1.39.16.of emscripten. They also describe how malicious, user-supplied input data could lead to a classical call-stack overflow. For example, a program which expects as input an acyclic graph could be supplied with a cyclic graph. Since WebAssembly has no guard pages, such a stack overflow could overwrite data following the stack such as the heap or even read-only data. This depends on the memory layout introduced by the allocator. However, no example of an exploit is given. 
 
@@ -509,19 +509,19 @@ Regarding the use of the unsafe, unmanaged memory, 65\% of the analyzed programs
 \begin{figure}[h]
   \centering
   \includegraphics[scale=.8]{analysis_unmanaged_stack}
-  \caption{Result of an analysis of memory usage in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
+  \caption{Result of an analysis of memory usage in real world WebAssembly binaries, taken from \citet{hilbig_empirical_2021}.}  
 \label{fig:analysis_unmanaged_stack}
 \end{figure}
 
 \begin{figure}[h]
   \centering
   \includegraphics[scale=.8]{analysis_used_alloc}
-  \caption{Result of an analysis of allocators used in real world WebAssembly binaries, taken from \cite{hilbig_empirical_2021}.}  
+  \caption{Result of an analysis of allocators used in real world WebAssembly binaries, taken from \citet{hilbig_empirical_2021}.}  
 \label{fig:analysis_used_alloc}
 \end{figure}
 
 \begin{table*}
-\caption{Result of an analysis of potentially harmful functions imported into WebAssembly modules. Taken from \cite{hilbig_empirical_2021} with some modifications.}
+\caption{Result of an analysis of potentially harmful functions imported into WebAssembly modules. Taken from \citet{hilbig_empirical_2021} with some modifications.}
 \label{table:analysis_import_harmful_functions}
 \begin{tabular}{l|l|l}
   \toprule
